@@ -2,243 +2,568 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>Mapa ontológico: El laberinto de la soledad</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.min.js"></script>
+    <title>Mapa Ontológico · El laberinto de la soledad</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
-        #info {
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0e0b07;
+            overflow: hidden;
+            font-family: 'Libre Baskerville', serif;
+            cursor: default;
+        }
+
+        /* Grain overlay */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.35;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #header {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 14px;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
             pointer-events: none;
             z-index: 10;
         }
+
+        #header h1 {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 18px;
+            color: #e8d5a3;
+            letter-spacing: 0.08em;
+            opacity: 0.9;
+        }
+
+        #header p {
+            font-family: 'IM Fell English', serif;
+            font-style: italic;
+            font-size: 11px;
+            color: #8b7355;
+            letter-spacing: 0.15em;
+            margin-top: 2px;
+        }
+
+        #tooltip {
+            position: absolute;
+            background: rgba(14, 11, 7, 0.96);
+            border: 1px solid #5a4a2a;
+            color: #e8d5a3;
+            padding: 10px 14px;
+            border-radius: 2px;
+            font-size: 12px;
+            line-height: 1.6;
+            max-width: 240px;
+            pointer-events: none;
+            display: none;
+            z-index: 50;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+
+        #tooltip .tip-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #f0c060;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #3a2f1a;
+            padding-bottom: 4px;
+        }
+
+        #tooltip .tip-desc {
+            font-style: italic;
+            color: #c4a97a;
+        }
+
+        #legend {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #legend .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+            font-size: 10px;
+            color: #8b7355;
+            letter-spacing: 0.05em;
+            font-family: 'Libre Baskerville', serif;
+        }
+
+        #legend .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            flex-shrink: 0;
+        }
+
         #instruccion {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255,255,255,0.8);
-            color: #333;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            border: 1px solid #ccc;
+            bottom: 16px;
+            right: 16px;
+            font-family: 'IM Fell English', serif;
+            font-style: italic;
+            font-size: 11px;
+            color: #5a4a2a;
+            pointer-events: none;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <div id="info">Conceptos y relaciones de <em>El laberinto de la soledad</em></div>
-    <div id="instruccion">Pasa el ratón sobre un nodo para ver su descripción</div>
+    <div id="header">
+        <h1>El laberinto de la soledad</h1>
+        <p>Octavio Paz · Mapa ontológico</p>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="tooltip">
+        <div class="tip-title" id="tip-title"></div>
+        <div class="tip-desc" id="tip-desc"></div>
+    </div>
+
+    <div id="legend">
+        <div class="leg-item"><div class="dot" style="background:#f0c060"></div>Concepto central</div>
+        <div class="leg-item"><div class="dot" style="background:#6aaa6a"></div>Conceptos nucleares</div>
+        <div class="leg-item"><div class="dot" style="background:#d4845a"></div>Arquetipos y figuras</div>
+        <div class="leg-item"><div class="dot" style="background:#5a8fcc"></div>Hitos históricos</div>
+        <div class="leg-item"><div class="dot" style="background:#a09060"></div>Conceptos abstractos</div>
+    </div>
+
+    <div id="instruccion">Pasa el cursor sobre un nodo</div>
+
     <script>
-        let nodes = [];
-        let edges = [];
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('tooltip');
+    const tipTitle = document.getElementById('tip-title');
+    const tipDesc = document.getElementById('tip-desc');
 
-        function setup() {
-            createCanvas(1300, 800);
-            textSize(12);
-            textAlign(CENTER, CENTER);
-            ellipseMode(CENTER);
-            
-            // -------------------- Nodos --------------------
-            // Nodo central
-            nodes.push(crearNodo('soledad', 'La Soledad', 650, 400, color(255, 215, 0), 30, 
-                'Fondo último de la condición humana, orfandad y ruptura con el Todo.'));
+    let W, H, cx, cy;
+    let nodes = [], edges = [];
+    let hoveredNode = null;
+    let animFrame = 0;
 
-            // Segundo nivel (radio 150)
-            let r2 = 150;
-            nodes.push(crearNodo('mexicano', 'El Mexicano', 650 + r2, 400, color(144, 238, 144), 24,
-                'Hermetismo, máscaras, ideal de "no rajarse".'));
-            nodes.push(crearNodo('historia', 'La Historia de México', 650 + r2 * cos(radians(60)), 400 - r2 * sin(radians(60)), color(144, 238, 144), 24,
-                'Ciclo de rupturas y búsquedas de filiación.'));
-            nodes.push(crearNodo('fiesta', 'La Fiesta', 650 + r2 * cos(radians(120)), 400 - r2 * sin(radians(120)), color(144, 238, 144), 24,
-                'Comunión, estallido del silencio, regreso al caos.'));
-            nodes.push(crearNodo('muerte', 'La Muerte', 650 - r2, 400, color(144, 238, 144), 24,
-                'Espejo de la vida, frecuentada pero sin entrega.'));
+    // ─── Paleta ──────────────────────────────────────────────────────────────
+    const COLORS = {
+        central:    '#f0c060',
+        nuclear:    '#6aaa6a',
+        arquetipo:  '#d4845a',
+        historia:   '#5a8fcc',
+        abstracto:  '#a09060',
+        sorjuana:   '#c8b040',
+    };
 
-            // Tercer nivel: arquetipos (radio 250)
-            let r3 = 250;
-            nodes.push(crearNodo('chingada', 'La Chingada', 650 + r3 * cos(radians(0)), 400 - r3 * sin(radians(0)), color(255, 160, 122), 20,
-                'Madre violada, pasividad, trauma de la Conquista.'));
-            nodes.push(crearNodo('macho', 'El Macho', 650 + r3 * cos(radians(30)), 400 - r3 * sin(radians(30)), color(255, 160, 122), 20,
-                'Polo masculino, poder arbitrario que hiere.'));
-            nodes.push(crearNodo('malinche', 'La Malinche', 650 + r3 * cos(radians(60)), 400 - r3 * sin(radians(60)), color(255, 160, 122), 20,
-                'Símbolo de entrega y traición, Eva mexicana.'));
-            nodes.push(crearNodo('cuauhtemoc', 'Cuauhtémoc', 650 + r3 * cos(radians(90)), 400 - r3 * sin(radians(90)), color(255, 160, 122), 20,
-                'Héroe caído, origen mítico de la nación.'));
-            nodes.push(crearNodo('pachuco', 'El Pachuco', 650 + r3 * cos(radians(120)), 400 - r3 * sin(radians(120)), color(255, 160, 122), 20,
-                'Extremo de identidad, híbrido que no quiere ser.'));
-            nodes.push(crearNodo('virgen', 'Virgen de Guadalupe', 650 + r3 * cos(radians(150)), 400 - r3 * sin(radians(150)), color(255, 160, 122), 20,
-                'Madre de los huérfanos, refugio de los desamparados.'));
+    function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        cx = W / 2;
+        cy = H / 2;
+        buildGraph();
+        render();
+    }
 
-            // Tercer nivel: eventos históricos (radio 250, ángulos opuestos)
-            nodes.push(crearNodo('conquista', 'La Conquista', 650 + r3 * cos(radians(180)), 400 - r3 * sin(radians(180)), color(173, 216, 230), 20,
-                'Violación, trauma, suicidio de los dioses.'));
-            nodes.push(crearNodo('colonia', 'La Colonia', 650 + r3 * cos(radians(210)), 400 - r3 * sin(radians(210)), color(173, 216, 230), 20,
-                'Orden universal, participación religiosa, petrificación.'));
-            nodes.push(crearNodo('independencia', 'Independencia', 650 + r3 * cos(radians(240)), 400 - r3 * sin(radians(240)), color(173, 216, 230), 20,
-                'Ruptura política, ambigüedad.'));
-            nodes.push(crearNodo('reforma', 'La Reforma', 650 + r3 * cos(radians(270)), 400 - r3 * sin(radians(270)), color(173, 216, 230), 20,
-                'Negación del pasado, proyecto liberal.'));
-            nodes.push(crearNodo('revolucion', 'La Revolución', 650 + r3 * cos(radians(300)), 400 - r3 * sin(radians(300)), color(173, 216, 230), 20,
-                'Regreso a los orígenes, búsqueda de sí mismo.'));
-            nodes.push(crearNodo('porfiriato', 'El Porfiriato', 650 + r3 * cos(radians(330)), 400 - r3 * sin(radians(330)), color(173, 216, 230), 20,
-                'Simulación, positivismo como máscara.'));
+    // ─── Construcción del grafo ───────────────────────────────────────────────
+    function buildGraph() {
+        nodes = [];
+        edges = [];
 
-            // Cuarto nivel: conceptos abstractos y figuras (radio 350)
-            let r4 = 350;
-            nodes.push(crearNodo('mascara', 'Máscara', 650 + r4 * cos(radians(0)), 400 - r4 * sin(radians(0)), color(144, 238, 144), 16,
-                'Defensa de la intimidad, simulación.'));
-            nodes.push(crearNodo('comunion', 'Comunión', 650 + r4 * cos(radians(20)), 400 - r4 * sin(radians(20)), color(144, 238, 144), 16,
-                'Búsqueda de salir de la soledad (fiesta, amor).'));
-            nodes.push(crearNodo('ninguneo', 'Ninguneo', 650 + r4 * cos(radians(40)), 400 - r4 * sin(radians(40)), color(144, 238, 144), 16,
-                'Hacer de alguien ninguno, negación del otro.'));
-            nodes.push(crearNodo('pasado', 'Pasado', 650 + r4 * cos(radians(60)), 400 - r4 * sin(radians(60)), color(144, 238, 144), 16,
-                'Tradición indígena y colonial.'));
-            nodes.push(crearNodo('tradicion', 'Tradición', 650 + r4 * cos(radians(80)), 400 - r4 * sin(radians(80)), color(144, 238, 144), 16,
-                'Herencia española e indígena.'));
-            nodes.push(crearNodo('norteamericano', 'Norteamericano', 650 + r4 * cos(radians(100)), 400 - r4 * sin(radians(100)), color(144, 238, 144), 16,
-                'Activo, optimista, usa la realidad.'));
-            nodes.push(crearNodo('gesticulador', 'Gesticulador', 650 + r4 * cos(radians(120)), 400 - r4 * sin(radians(120)), color(144, 238, 144), 16,
-                'Personaje que simula para ser auténtico (Usigli).'));
-            nodes.push(crearNodo('sorjuana', 'Sor Juana', 650 + r4 * cos(radians(140)), 400 - r4 * sin(radians(140)), color(255, 255, 100), 16,
-                'Figura intelectual, soledad y conflicto.'));
-            nodes.push(crearNodo('prehispanico', 'México Prehispánico', 650 + r4 * cos(radians(160)), 400 - r4 * sin(radians(160)), color(210, 180, 140), 16,
-                'Culturas originarias, base mítica.'));
+        const r2 = Math.min(W, H) * 0.17;
+        const r3 = Math.min(W, H) * 0.30;
+        const r4 = Math.min(W, H) * 0.42;
 
-            // -------------------- Aristas --------------------
-            function addEdge(from, to, label) {
-                edges.push({ from: from, to: to, label: label });
+        function addNode(id, label, x, y, color, size, desc) {
+            nodes.push({ id, label, x, y, color, size, desc, vx: 0, vy: 0 });
+        }
+
+        function pos(r, deg) {
+            const rad = (deg - 90) * Math.PI / 180;
+            return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+        }
+
+        // Central
+        addNode('soledad', 'La Soledad', cx, cy, COLORS.central, 34,
+            'Fondo último de la condición humana. Orfandad y ruptura con el Todo; estado originario del ser.');
+
+        // Nivel 2
+        let p;
+        p = pos(r2, 0);
+        addNode('mexicano', 'El Mexicano', p.x, p.y, COLORS.nuclear, 26,
+            'Hermetismo, máscaras, ideal de "no rajarse". El sujeto central del ensayo de Paz.');
+        p = pos(r2, 72);
+        addNode('historia', 'Historia de México', p.x, p.y, COLORS.nuclear, 24,
+            'Ciclo de rupturas y búsquedas de filiación que define la identidad nacional.');
+        p = pos(r2, 144);
+        addNode('fiesta', 'La Fiesta', p.x, p.y, COLORS.nuclear, 24,
+            'Comunión colectiva, estallido del silencio y regreso momentáneo al caos original.');
+        p = pos(r2, 216);
+        addNode('muerte', 'La Muerte', p.x, p.y, COLORS.nuclear, 24,
+            'Espejo de la vida mexicana: frecuentada, burlada, pero nunca plenamente aceptada.');
+        p = pos(r2, 288);
+        addNode('identidad', 'Identidad', p.x, p.y, COLORS.nuclear, 22,
+            'Pregunta irresuelta: ¿quiénes somos? Motor de todo el ensayo.');
+
+        // Nivel 3 — arquetipos
+        const arqs = [
+            ['chingada',  'La Chingada',        0,   COLORS.arquetipo, 20, 'Madre violada, pasividad, trauma fundacional de la Conquista.'],
+            ['macho',     'El Macho',           35,  COLORS.arquetipo, 18, 'Polo masculino: poder arbitrario que hiere y cierra.'],
+            ['malinche',  'La Malinche',        70,  COLORS.arquetipo, 18, 'Símbolo de entrega y traición, Eva mexicana.'],
+            ['cuauhtemoc','Cuauhtémoc',         105, COLORS.arquetipo, 18, 'Héroe caído, origen mítico-trágico de la nación.'],
+            ['pachuco',   'El Pachuco',         140, COLORS.arquetipo, 18, 'Extremo de la identidad: híbrido que no quiere asimilarse.'],
+            ['virgen',    'Virgen de Guadalupe',175, COLORS.arquetipo, 18, 'Madre de los huérfanos; refugio afectivo de los desamparados.'],
+        ];
+        for (const [id, label, deg, color, sz, desc] of arqs) {
+            p = pos(r3, deg);
+            addNode(id, label, p.x, p.y, color, sz, desc);
+        }
+
+        // Nivel 3 — historia
+        const hists = [
+            ['conquista',    'La Conquista',    200, 'Violación, trauma, suicidio de los dioses indígenas.'],
+            ['colonia',      'La Colonia',      230, 'Orden universal, participación religiosa, petrificación barroca.'],
+            ['independencia','Independencia',   258, 'Ruptura política; ambigüedad entre modernidad y tradición.'],
+            ['reforma',      'La Reforma',      285, 'Negación del pasado colonial; proyecto liberal abstracto.'],
+            ['porfiriato',   'El Porfiriato',   310, 'Simulación, positivismo como máscara del poder.'],
+            ['revolucion',   'La Revolución',   338, 'Regreso a los orígenes; búsqueda violenta de sí mismo.'],
+        ];
+        for (const [id, label, deg, desc] of hists) {
+            p = pos(r3, deg);
+            addNode(id, label, p.x, p.y, COLORS.historia, 18, desc);
+        }
+
+        // Nivel 4 — abstractos
+        const absts = [
+            ['mascara',     'Máscara',          15,  'Defensa de la intimidad; el rostro que protege al yo verdadero.'],
+            ['comunion',    'Comunión',         40,  'Anhelo de salir de la soledad a través del amor, la fiesta o el éxtasis.'],
+            ['ninguneo',    'Ninguneo',         65,  'Hacer de alguien un nadie; la negación radical del otro.'],
+            ['pasado',      'Pasado',           90,  'La tradición indígena y colonial como peso y recurso simultáneos.'],
+            ['tradicion',   'Tradición',        115, 'Herencia española e indígena, viva en costumbres y mitos.'],
+            ['norteamericano','Norteamericano', 145, 'El otro: activo, optimista, que usa la realidad sin ocultarla.'],
+            ['gesticulador','El Gesticulador',  170, 'Personaje de Usigli que simula hasta volverse auténtico.'],
+            ['sorjuana',    'Sor Juana',        195, COLORS.sorjuana, 'Figura intelectual de la Colonia; soledad creativa y conflicto.'],
+            ['prehispanico','México Prehispánico',228,'Culturas originarias; base mítica del ser mexicano.'],
+        ];
+        for (let i = 0; i < absts.length; i++) {
+            const a = absts[i];
+            // Sor Juana tiene color propio
+            if (a.length === 5) {
+                p = pos(r4, a[2]);
+                addNode(a[0], a[1], p.x, p.y, a[3], 14, a[4]);
+            } else {
+                p = pos(r4, a[2]);
+                addNode(a[0], a[1], p.x, p.y, COLORS.abstracto, 14, a[3]);
+            }
+        }
+
+        // ─── Aristas ─────────────────────────────────────────────────────────
+        function addEdge(from, to, label = '') {
+            edges.push({ from, to, label });
+        }
+
+        addEdge('soledad', 'mexicano', 'fondo ontológico');
+        addEdge('soledad', 'comunion', 'tensión dialéctica');
+        addEdge('soledad', 'fiesta', 'salida ilusoria');
+        addEdge('soledad', 'muerte', 'espejo');
+        addEdge('mexicano', 'mascara', 'defensa');
+        addEdge('mexicano', 'ninguneo', 'mecanismo');
+        addEdge('mexicano', 'norteamericano', 'contraste');
+        addEdge('mexicano', 'pachuco', 'extremo');
+        addEdge('mexicano', 'identidad', 'interrogante');
+        addEdge('historia', 'conquista', 'hito fundacional');
+        addEdge('historia', 'independencia', 'hito');
+        addEdge('historia', 'reforma', 'hito');
+        addEdge('historia', 'revolucion', 'hito');
+        addEdge('historia', 'porfiriato', 'hito');
+        addEdge('conquista', 'chingada', 'violación');
+        addEdge('conquista', 'malinche', 'traición');
+        addEdge('conquista', 'cuauhtemoc', 'resistencia');
+        addEdge('conquista', 'colonia', 'consecuencia');
+        addEdge('conquista', 'prehispanico', 'destruye');
+        addEdge('colonia', 'virgen', 'culto');
+        addEdge('colonia', 'sorjuana', 'figura');
+        addEdge('colonia', 'tradicion', 'hereda');
+        addEdge('reforma', 'tradicion', 'niega');
+        addEdge('porfiriato', 'revolucion', 'provoca');
+        addEdge('revolucion', 'pasado', 'regreso');
+        addEdge('revolucion', 'prehispanico', 'inspiración');
+        addEdge('macho', 'chingada', 'acción');
+        addEdge('malinche', 'chingada', 'identificación');
+        addEdge('virgen', 'chingada', 'antítesis');
+        addEdge('fiesta', 'comunion', 'expresa');
+        addEdge('pachuco', 'norteamericano', 'rechazo');
+        addEdge('independencia', 'reforma', 'precede');
+        addEdge('pasado', 'prehispanico', 'raíz');
+        addEdge('tradicion', 'prehispanico', 'hereda');
+        addEdge('gesticulador', 'mascara', 'simula');
+        addEdge('identidad', 'historia', 'busca en');
+    }
+
+    // ─── Render ───────────────────────────────────────────────────────────────
+    function getNode(id) { return nodes.find(n => n.id === id); }
+
+    function drawArrow(x1, y1, x2, y2, r2size) {
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len === 0) return;
+        const ux = dx/len, uy = dy/len;
+        // Acortar al borde del nodo destino
+        const ex = x2 - ux * (r2size/2 + 5);
+        const ey = y2 - uy * (r2size/2 + 5);
+        // Acortar desde el nodo origen
+        const n1 = getNode(null); // just geometry
+        const sx = x1 + ux * 0; // comenzar en borde origen (simplificado)
+        const sy = y1 + uy * 0;
+
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        // Flecha
+        const as = 7, aa = 0.45;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - as*Math.cos(Math.atan2(dy,dx)-aa), ey - as*Math.sin(Math.atan2(dy,dx)-aa));
+        ctx.lineTo(ex - as*Math.cos(Math.atan2(dy,dx)+aa), ey - as*Math.sin(Math.atan2(dy,dx)+aa));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, W, H);
+
+        // Fondo radial sutil
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W,H)*0.7);
+        grad.addColorStop(0, '#18130a');
+        grad.addColorStop(1, '#0a0804');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // ── Aristas ──────────────────────────────────────────────────────────
+        for (const e of edges) {
+            const fn = getNode(e.from), tn = getNode(e.to);
+            if (!fn || !tn) continue;
+
+            const isHov = hoveredNode && (hoveredNode.id === e.from || hoveredNode.id === e.to);
+            const alpha = isHov ? 0.8 : 0.18;
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = isHov ? '#c8a050' : '#8b7040';
+            ctx.fillStyle   = isHov ? '#c8a050' : '#8b7040';
+            ctx.lineWidth   = isHov ? 1.5 : 0.8;
+
+            // Acortar línea por ambos extremos al radio del nodo
+            const dx = tn.x - fn.x, dy = tn.y - fn.y;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            const ux = dx/len, uy = dy/len;
+            const sx = fn.x + ux * (fn.size/2 + 2);
+            const sy = fn.y + uy * (fn.size/2 + 2);
+            const ex = tn.x - ux * (tn.size/2 + 6);
+            const ey = tn.y - uy * (tn.size/2 + 6);
+
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+
+            // Punta de flecha
+            const angle = Math.atan2(dy, dx);
+            const as = 6, aa = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - as*Math.cos(angle-aa), ey - as*Math.sin(angle-aa));
+            ctx.lineTo(ex - as*Math.cos(angle+aa), ey - as*Math.sin(angle+aa));
+            ctx.closePath();
+            ctx.fill();
+
+            // Etiqueta de arista (sólo si hover)
+            if (isHov && e.label) {
+                const mx = (sx + ex) / 2;
+                const my = (sy + ey) / 2;
+                const perpX = -uy * 12;
+                const perpY =  ux * 12;
+                ctx.globalAlpha = 0.9;
+                ctx.font = `italic 9px 'Libre Baskerville', serif`;
+                ctx.fillStyle = '#c8a050';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(e.label, mx + perpX, my + perpY);
             }
 
-            addEdge('soledad', 'comunion', '0.9 (tensión dialéctica)');
-            addEdge('soledad', 'mexicano', 'fondo');
-            addEdge('mexicano', 'mascara', '0.9 (defensa)');
-            addEdge('mexicano', 'ninguneo', 'relación');
-            addEdge('mexicano', 'norteamericano', '0.7 (oposición)');
-            addEdge('norteamericano', 'mexicano', '0.7 (oposición)');
-            addEdge('historia', 'conquista', 'hito');
-            addEdge('historia', 'independencia', 'hito');
-            addEdge('historia', 'reforma', 'hito');
-            addEdge('historia', 'revolucion', 'hito');
-            addEdge('conquista', 'chingada', '0.9 (violación)');
-            addEdge('conquista', 'malinche', '0.8 (traición)');
-            addEdge('conquista', 'cuauhtemoc', '0.8 (resistencia)');
-            addEdge('conquista', 'colonia', 'consecuencia');
-            addEdge('conquista', 'prehispanico', 'destrucción');
-            addEdge('colonia', 'virgen', 'culto');
-            addEdge('colonia', 'sorjuana', 'figura');
-            addEdge('reforma', 'tradicion', '0.8 (negación)');
-            addEdge('revolucion', 'pasado', '0.8 (regreso)');
-            addEdge('revolucion', 'prehispanico', 'inspiración');
-            addEdge('macho', 'chingada', 'acción de chingar');
-            addEdge('malinche', 'chingada', 'identificación');
-            addEdge('virgen', 'chingada', 'oposición');
-            addEdge('fiesta', 'comunion', 'representa');
-            addEdge('muerte', 'mexicano', 'espejo');
-            addEdge('pachuco', 'mexicano', 'extremo');
-            addEdge('pachuco', 'norteamericano', 'rechazo');
-            addEdge('independencia', 'reforma', 'precede');
-            addEdge('porfiriato', 'revolucion', 'causa');
-            addEdge('pasado', 'colonia', 'conexión');
-            addEdge('pasado', 'prehispanico', 'raíz');
-            addEdge('tradicion', 'colonia', 'hereda');
-            addEdge('tradicion', 'prehispanico', 'hereda');
-            addEdge('gesticulador', 'mascara', 'simulación');
-
-            noLoop();
+            ctx.restore();
         }
 
-        // Función auxiliar para crear nodos con valores por defecto seguros
-        function crearNodo(id, label, x, y, col, sz, desc) {
-            return {
-                id: id,
-                label: label || '',
-                x: x,
-                y: y,
-                color: col,
-                size: sz,
-                desc: desc || 'Sin descripción'
-            };
-        }
+        // ── Nodos ─────────────────────────────────────────────────────────────
+        for (const n of nodes) {
+            const isHov = hoveredNode && hoveredNode.id === n.id;
+            const r = n.size / 2;
 
-        function draw() {
-            background(245, 245, 240);
-            
-            // Dibujar aristas
-            stroke(100, 100, 100, 80);
-            strokeWeight(1);
-            for (let e of edges) {
-                let fromNode = nodes.find(n => n.id === e.from);
-                let toNode = nodes.find(n => n.id === e.to);
-                if (fromNode && toNode) {
-                    line(fromNode.x, fromNode.y, toNode.x, toNode.y);
-                    
-                    // Etiqueta de la arista en el punto medio con desplazamiento
-                    let midX = (fromNode.x + toNode.x) / 2;
-                    let midY = (fromNode.y + toNode.y) / 2;
-                    let dx = toNode.x - fromNode.x;
-                    let dy = toNode.y - fromNode.y;
-                    let angle = atan2(dy, dx);
-                    let offset = 15;
-                    let labelX = midX + cos(angle + HALF_PI) * offset;
-                    let labelY = midY + sin(angle + HALF_PI) * offset;
-                    
-                    fill(80, 80, 80, 200);
-                    noStroke();
-                    textSize(9);
-                    text(e.label, labelX, labelY);
+            ctx.save();
+
+            // Halo de hover
+            if (isHov) {
+                const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r * 2.5);
+                halo.addColorStop(0, hexAlpha(n.color, 0.3));
+                halo.addColorStop(1, hexAlpha(n.color, 0));
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, r * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = halo;
+                ctx.fill();
+            }
+
+            // Sombra
+            ctx.shadowColor = n.color;
+            ctx.shadowBlur  = isHov ? 18 : 6;
+
+            // Círculo relleno con gradiente
+            const g = ctx.createRadialGradient(n.x - r*0.3, n.y - r*0.3, r*0.1, n.x, n.y, r);
+            g.addColorStop(0, lighten(n.color, 40));
+            g.addColorStop(1, darken(n.color, 30));
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = g;
+            ctx.fill();
+
+            // Borde
+            ctx.strokeStyle = isHov ? '#ffffff' : hexAlpha(n.color, 0.6);
+            ctx.lineWidth   = isHov ? 1.5 : 0.8;
+            ctx.shadowBlur  = 0;
+            ctx.stroke();
+
+            ctx.restore();
+
+            // ── Etiqueta del nodo ─────────────────────────────────────────────
+            const fontSize = n.size > 26 ? 13 : n.size > 18 ? 11 : 9.5;
+            ctx.save();
+            ctx.font = `${n.size > 26 ? '700 ' : ''}${fontSize}px 'Playfair Display', serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = isHov ? '#fff' : hexAlpha('#e8d5a3', 0.85);
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 4;
+
+            // Partir etiquetas largas
+            const words = n.label.split(' ');
+            const maxW = n.size * 2.5;
+            let line = '', lines = [];
+            for (const w of words) {
+                const test = line ? line + ' ' + w : w;
+                if (ctx.measureText(test).width > maxW && line) {
+                    lines.push(line);
+                    line = w;
+                } else {
+                    line = test;
                 }
             }
-            
-            // Dibujar nodos
-            for (let n of nodes) {
-                // Sombra
-                fill(0, 0, 0, 20);
-                noStroke();
-                ellipse(n.x + 2, n.y + 2, n.size + 2, n.size + 2);
-                // Círculo
-                fill(n.color);
-                stroke(50);
-                strokeWeight(1);
-                ellipse(n.x, n.y, n.size, n.size);
-                // Etiqueta del nodo
-                fill(20);
-                noStroke();
-                textSize(n.size > 20 ? 12 : 10);
-                text(n.label, n.x, n.y - n.size/2 - 5);
+            lines.push(line);
+
+            const lineH = fontSize + 2;
+            const totalH = lines.length * lineH;
+            const startY = n.y + r + 4;
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], n.x, startY + i * lineH);
             }
-            
-            // Mostrar descripción al pasar el ratón
-            let nodoCerca = null;
-            for (let n of nodes) {
-                let d = dist(mouseX, mouseY, n.x, n.y);
-                if (d < n.size/2) {
-                    nodoCerca = n;
-                    break;
-                }
-            }
-            
-            if (nodoCerca) {
-                // Fondo para el texto
-                fill(0, 0, 0, 220);
-                noStroke();
-                rect(mouseX + 15, mouseY - 35, 220, 45, 5);
-                fill(255);
-                textSize(11);
-                textAlign(LEFT, TOP);
-                text(nodoCerca.desc, mouseX + 20, mouseY - 30, 210, 40);
-                textAlign(CENTER, CENTER);
+            ctx.restore();
+        }
+
+        // Anillo decorativo central
+        ctx.save();
+        ctx.globalAlpha = 0.07;
+        ctx.strokeStyle = '#f0c060';
+        ctx.lineWidth = 1;
+        [0.17, 0.30, 0.42].forEach(frac => {
+            const r = Math.min(W,H) * frac;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.stroke();
+        });
+        ctx.restore();
+    }
+
+    // ─── Helpers de color ─────────────────────────────────────────────────────
+    function hexAlpha(hex, a) {
+        const r = parseInt(hex.slice(1,3),16);
+        const g = parseInt(hex.slice(3,5),16);
+        const b = parseInt(hex.slice(5,7),16);
+        return `rgba(${r},${g},${b},${a})`;
+    }
+    function clamp(v) { return Math.max(0, Math.min(255, v)); }
+    function lighten(hex, amt) {
+        const r = clamp(parseInt(hex.slice(1,3),16)+amt);
+        const g = clamp(parseInt(hex.slice(3,5),16)+amt);
+        const b = clamp(parseInt(hex.slice(5,7),16)+amt);
+        return `rgb(${r},${g},${b})`;
+    }
+    function darken(hex, amt) {
+        const r = clamp(parseInt(hex.slice(1,3),16)-amt);
+        const g = clamp(parseInt(hex.slice(3,5),16)-amt);
+        const b = clamp(parseInt(hex.slice(5,7),16)-amt);
+        return `rgb(${r},${g},${b})`;
+    }
+
+    // ─── Interacción ──────────────────────────────────────────────────────────
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        let found = null;
+        for (const n of nodes) {
+            const dx = mx - n.x, dy = my - n.y;
+            if (dx*dx + dy*dy <= (n.size/2)*(n.size/2)) {
+                found = n;
+                break;
             }
         }
 
-        function mouseMoved() {
-            redraw();
+        if (found !== hoveredNode) {
+            hoveredNode = found;
+            render();
         }
+
+        if (found) {
+            canvas.style.cursor = 'pointer';
+            tipTitle.textContent = found.label;
+            tipDesc.textContent  = found.desc;
+            tooltip.style.display = 'block';
+            let tx = e.clientX + 18, ty = e.clientY - 10;
+            if (tx + 250 > W) tx = e.clientX - 265;
+            if (ty + 80 > H) ty = e.clientY - 90;
+            tooltip.style.left = tx + 'px';
+            tooltip.style.top  = ty + 'px';
+        } else {
+            canvas.style.cursor = 'default';
+            tooltip.style.display = 'none';
+        }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        hoveredNode = null;
+        tooltip.style.display = 'none';
+        render();
+    });
+
+    window.addEventListener('resize', resize);
+    resize();
     </script>
 </body>
 </html>
