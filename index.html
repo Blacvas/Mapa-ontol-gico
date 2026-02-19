@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Mapa ontológico: El laberinto de la soledad</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
         #info {
@@ -12,17 +12,29 @@
             left: 10px;
             background: rgba(0,0,0,0.7);
             color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #instruccion {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.8);
+            color: #333;
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 12px;
-            pointer-events: none;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
-    <div id="info">Conceptos y relaciones de <em>El laberinto de la soledad</em> – Pulsa en un nodo para ver detalles</div>
+    <div id="info">Conceptos y relaciones de <em>El laberinto de la soledad</em></div>
+    <div id="instruccion">Pasa el ratón sobre un nodo para ver su descripción</div>
     <script>
-        // Definición de nodos y aristas
         let nodes = [];
         let edges = [];
 
@@ -32,89 +44,132 @@
             textAlign(CENTER, CENTER);
             ellipseMode(CENTER);
             
-            // Crear nodos con posiciones predefinidas (diseño radial)
-            // Centro
-            nodes.push({ id: 'soledad', label: 'La Soledad', x: 650, y: 400, color: color(255, 215, 0), size: 30, desc: 'Fondo último de la condición humana, orfandad y ruptura con el Todo.' });
-            
+            // -------------------- Nodos --------------------
+            // Nodo central
+            nodes.push(crearNodo('soledad', 'La Soledad', 650, 400, color(255, 215, 0), 30, 
+                'Fondo último de la condición humana, orfandad y ruptura con el Todo.'));
+
             // Segundo nivel (radio 150)
             let r2 = 150;
-            nodes.push({ id: 'mexicano', label: 'El Mexicano', x: 650 + r2, y: 400, color: color(144, 238, 144), size: 24, desc: 'Hermetismo, máscaras, ideal de "no rajarse".' });
-            nodes.push({ id: 'historia', label: 'La Historia de México', x: 650 + r2 * cos(radians(60)), y: 400 - r2 * sin(radians(60)), color: color(144, 238, 144), size: 24, desc: 'Ciclo de rupturas y búsquedas de filiación.' });
-            nodes.push({ id: 'fiesta', label: 'La Fiesta', x: 650 + r2 * cos(radians(120)), y: 400 - r2 * sin(radians(120)), color: color(144, 238, 144), size: 24, desc: 'Comunión, estallido del silencio, regreso al caos.' });
-            nodes.push({ id: 'muerte', label: 'La Muerte', x: 650 - r2, y: 400, color: color(144, 238, 144), size: 24, desc: 'Espejo de la vida, frecuentada pero sin entrega.' });
-            
+            nodes.push(crearNodo('mexicano', 'El Mexicano', 650 + r2, 400, color(144, 238, 144), 24,
+                'Hermetismo, máscaras, ideal de "no rajarse".'));
+            nodes.push(crearNodo('historia', 'La Historia de México', 650 + r2 * cos(radians(60)), 400 - r2 * sin(radians(60)), color(144, 238, 144), 24,
+                'Ciclo de rupturas y búsquedas de filiación.'));
+            nodes.push(crearNodo('fiesta', 'La Fiesta', 650 + r2 * cos(radians(120)), 400 - r2 * sin(radians(120)), color(144, 238, 144), 24,
+                'Comunión, estallido del silencio, regreso al caos.'));
+            nodes.push(crearNodo('muerte', 'La Muerte', 650 - r2, 400, color(144, 238, 144), 24,
+                'Espejo de la vida, frecuentada pero sin entrega.'));
+
             // Tercer nivel: arquetipos (radio 250)
             let r3 = 250;
-            nodes.push({ id: 'chingada', label: 'La Chingada', x: 650 + r3 * cos(radians(0)), y: 400 - r3 * sin(radians(0)), color: color(255, 160, 122), size: 20, desc: 'Madre violada, pasividad, trauma de la Conquista.' });
-            nodes.push({ id: 'macho', label: 'El Macho', x: 650 + r3 * cos(radians(30)), y: 400 - r3 * sin(radians(30)), color: color(255, 160, 122), size: 20, desc: 'Polo masculino, poder arbitrario que hiere.' });
-            nodes.push({ id: 'malinche', label: 'La Malinche', x: 650 + r3 * cos(radians(60)), y: 400 - r3 * sin(radians(60)), color: color(255, 160, 122), size: 20, desc: 'Símbolo de entrega y traición, Eva mexicana.' });
-            nodes.push({ id: 'cuauhtemoc', label: 'Cuauhtémoc', x: 650 + r3 * cos(radians(90)), y: 400 - r3 * sin(radians(90)), color: color(255, 160, 122), size: 20, desc: 'Héroe caído, origen mítico de la nación.' });
-            nodes.push({ id: 'pachuco', label: 'El Pachuco', x: 650 + r3 * cos(radians(120)), y: 400 - r3 * sin(radians(120)), color: color(255, 160, 122), size: 20, desc: 'Extremo de identidad, híbrido que no quiere ser.' });
-            nodes.push({ id: 'virgen', label: 'Virgen de Guadalupe', x: 650 + r3 * cos(radians(150)), y: 400 - r3 * sin(radians(150)), color: color(255, 160, 122), size: 20, desc: 'Madre de los huérfanos, refugio de los desamparados.' });
-            
+            nodes.push(crearNodo('chingada', 'La Chingada', 650 + r3 * cos(radians(0)), 400 - r3 * sin(radians(0)), color(255, 160, 122), 20,
+                'Madre violada, pasividad, trauma de la Conquista.'));
+            nodes.push(crearNodo('macho', 'El Macho', 650 + r3 * cos(radians(30)), 400 - r3 * sin(radians(30)), color(255, 160, 122), 20,
+                'Polo masculino, poder arbitrario que hiere.'));
+            nodes.push(crearNodo('malinche', 'La Malinche', 650 + r3 * cos(radians(60)), 400 - r3 * sin(radians(60)), color(255, 160, 122), 20,
+                'Símbolo de entrega y traición, Eva mexicana.'));
+            nodes.push(crearNodo('cuauhtemoc', 'Cuauhtémoc', 650 + r3 * cos(radians(90)), 400 - r3 * sin(radians(90)), color(255, 160, 122), 20,
+                'Héroe caído, origen mítico de la nación.'));
+            nodes.push(crearNodo('pachuco', 'El Pachuco', 650 + r3 * cos(radians(120)), 400 - r3 * sin(radians(120)), color(255, 160, 122), 20,
+                'Extremo de identidad, híbrido que no quiere ser.'));
+            nodes.push(crearNodo('virgen', 'Virgen de Guadalupe', 650 + r3 * cos(radians(150)), 400 - r3 * sin(radians(150)), color(255, 160, 122), 20,
+                'Madre de los huérfanos, refugio de los desamparados.'));
+
             // Tercer nivel: eventos históricos (radio 250, ángulos opuestos)
-            nodes.push({ id: 'conquista', label: 'La Conquista', x: 650 + r3 * cos(radians(180)), y: 400 - r3 * sin(radians(180)), color: color(173, 216, 230), size: 20, desc: 'Violación, trauma, suicidio de los dioses.' });
-            nodes.push({ id: 'colonia', label: 'La Colonia', x: 650 + r3 * cos(radians(210)), y: 400 - r3 * sin(radians(210)), color: color(173, 216, 230), size: 20, desc: 'Orden universal, participación religiosa, petrificación.' });
-            nodes.push({ id: 'independencia', label: 'Independencia', x: 650 + r3 * cos(radians(240)), y: 400 - r3 * sin(radians(240)), color: color(173, 216, 230), size: 20, desc: 'Ruptura política, ambigüedad.' });
-            nodes.push({ id: 'reforma', label: 'La Reforma', x: 650 + r3 * cos(radians(270)), y: 400 - r3 * sin(radians(270)), color: color(173, 216, 230), size: 20, desc: 'Negación del pasado, proyecto liberal.' });
-            nodes.push({ id: 'revolucion', label: 'La Revolución', x: 650 + r3 * cos(radians(300)), y: 400 - r3 * sin(radians(300)), color: color(173, 216, 230), size: 20, desc: 'Regreso a los orígenes, búsqueda de sí mismo.' });
-            nodes.push({ id: 'porfiriato', label: 'El Porfiriato', x: 650 + r3 * cos(radians(330)), y: 400 - r3 * sin(radians(330)), color: color(173, 216, 230), size: 20, desc: 'Simulación, positivismo como máscara.' });
-            
+            nodes.push(crearNodo('conquista', 'La Conquista', 650 + r3 * cos(radians(180)), 400 - r3 * sin(radians(180)), color(173, 216, 230), 20,
+                'Violación, trauma, suicidio de los dioses.'));
+            nodes.push(crearNodo('colonia', 'La Colonia', 650 + r3 * cos(radians(210)), 400 - r3 * sin(radians(210)), color(173, 216, 230), 20,
+                'Orden universal, participación religiosa, petrificación.'));
+            nodes.push(crearNodo('independencia', 'Independencia', 650 + r3 * cos(radians(240)), 400 - r3 * sin(radians(240)), color(173, 216, 230), 20,
+                'Ruptura política, ambigüedad.'));
+            nodes.push(crearNodo('reforma', 'La Reforma', 650 + r3 * cos(radians(270)), 400 - r3 * sin(radians(270)), color(173, 216, 230), 20,
+                'Negación del pasado, proyecto liberal.'));
+            nodes.push(crearNodo('revolucion', 'La Revolución', 650 + r3 * cos(radians(300)), 400 - r3 * sin(radians(300)), color(173, 216, 230), 20,
+                'Regreso a los orígenes, búsqueda de sí mismo.'));
+            nodes.push(crearNodo('porfiriato', 'El Porfiriato', 650 + r3 * cos(radians(330)), 400 - r3 * sin(radians(330)), color(173, 216, 230), 20,
+                'Simulación, positivismo como máscara.'));
+
             // Cuarto nivel: conceptos abstractos y figuras (radio 350)
             let r4 = 350;
-            nodes.push({ id: 'mascara', label: 'Máscara', x: 650 + r4 * cos(radians(0)), y: 400 - r4 * sin(radians(0)), color: color(144, 238, 144), size: 16, desc: 'Defensa de la intimidad, simulación.' });
-            nodes.push({ id: 'comunion', label: 'Comunión', x: 650 + r4 * cos(radians(20)), y: 400 - r4 * sin(radians(20)), color: color(144, 238, 144), size: 16, desc: 'Búsqueda de salir de la soledad (fiesta, amor).' });
-            nodes.push({ id: 'ninguneo', label: 'Ninguneo', x: 650 + r4 * cos(radians(40)), y: 400 - r4 * sin(radians(40)), color: color(144, 238, 144), size: 16, desc: 'Hacer de alguien ninguno, negación del otro.' });
-            nodes.push({ id: 'pasado', label: 'Pasado', x: 650 + r4 * cos(radians(60)), y: 400 - r4 * sin(radians(60)), color: color(144, 238, 144), size: 16, desc: 'Tradición indígena y colonial.' });
-            nodes.push({ id: 'tradicion', label: 'Tradición', x: 650 + r4 * cos(radians(80)), y: 400 - r4 * sin(radians(80)), color: color(144, 238, 144), size: 16, desc: 'Herencia española e indígena.' });
-            nodes.push({ id: 'norteamericano', label: 'Norteamericano', x: 650 + r4 * cos(radians(100)), y: 400 - r4 * sin(radians(100)), color: color(144, 238, 144), size: 16, desc: 'Activo, optimista, usa la realidad.' });
-            nodes.push({ id: 'gesticulador', label: 'Gesticulador', x: 650 + r4 * cos(radians(120)), y: 400 - r4 * sin(radians(120)), color: color(144, 238, 144), size: 16, desc: 'Personaje que simula para ser auténtico (Usigli).' });
-            nodes.push({ id: 'sorjuana', label: 'Sor Juana', x: 650 + r4 * cos(radians(140)), y: 400 - r4 * sin(radians(140)), color: color(255, 255, 100), size: 16, desc: 'Figura intelectual, soledad y conflicto.' });
-            nodes.push({ id: 'prehispanico', label: 'México Prehispánico', x: 650 + r4 * cos(radians(160)), y: 400 - r4 * sin(radians(160)), color: color(210, 180, 140), size: 16, desc: 'Culturas originarias, base mítica.' });
-            
-            // Definir aristas (relaciones)
-            // Nota: usamos índices para referenciar nodos por id
-            edges.push({ from: 'soledad', to: 'comunion', label: '0.9 (tensión dialéctica)' });
-            edges.push({ from: 'soledad', to: 'mexicano', label: 'fondo' });
-            edges.push({ from: 'mexicano', to: 'mascara', label: '0.9 (defensa)' });
-            edges.push({ from: 'mexicano', to: 'ninguneo', label: 'relación' });
-            edges.push({ from: 'mexicano', to: 'norteamericano', label: '0.7 (oposición)', bidirectional: true });
-            edges.push({ from: 'historia', to: 'conquista', label: 'hito' });
-            edges.push({ from: 'historia', to: 'independencia', label: 'hito' });
-            edges.push({ from: 'historia', to: 'reforma', label: 'hito' });
-            edges.push({ from: 'historia', to: 'revolucion', label: 'hito' });
-            edges.push({ from: 'conquista', to: 'chingada', label: '0.9 (violación)' });
-            edges.push({ from: 'conquista', to: 'malinche', label: '0.8 (traición)' });
-            edges.push({ from: 'conquista', to: 'cuauhtemoc', label: '0.8 (resistencia)' });
-            edges.push({ from: 'conquista', to: 'colonia', label: 'consecuencia' });
-            edges.push({ from: 'conquista', to: 'prehispanico', label: 'destrucción' });
-            edges.push({ from: 'colonia', to: 'virgen', label: 'culto' });
-            edges.push({ from: 'colonia', to: 'sorjuana', label: 'figura' });
-            edges.push({ from: 'reforma', to: 'tradicion', label: '0.8 (negación)' });
-            edges.push({ from: 'revolucion', to: 'pasado', label: '0.8 (regreso)' });
-            edges.push({ from: 'revolucion', to: 'prehispanico', label: 'inspiración' });
-            edges.push({ from: 'macho', to: 'chingada', label: 'acción de chingar' });
-            edges.push({ from: 'malinche', to: 'chingada', label: 'identificación' });
-            edges.push({ from: 'virgen', to: 'chingada', label: 'oposición' });
-            edges.push({ from: 'fiesta', to: 'comunion', label: 'representa' });
-            edges.push({ from: 'muerte', to: 'mexicano', label: 'espejo' });
-            edges.push({ from: 'pachuco', to: 'mexicano', label: 'extremo' });
-            edges.push({ from: 'pachuco', to: 'norteamericano', label: 'rechazo' });
-            edges.push({ from: 'independencia', to: 'reforma', label: 'precede' });
-            edges.push({ from: 'porfiriato', to: 'revolucion', label: 'causa' });
-            edges.push({ from: 'pasado', to: 'colonia', label: 'conexión' });
-            edges.push({ from: 'pasado', to: 'prehispanico', label: 'raíz' });
-            edges.push({ from: 'tradicion', to: 'colonia', label: 'hereda' });
-            edges.push({ from: 'tradicion', to: 'prehispanico', label: 'hereda' });
-            edges.push({ from: 'gesticulador', to: 'mascara', label: 'simulación' });
-            
-            noLoop(); // Dibujar una vez estático
+            nodes.push(crearNodo('mascara', 'Máscara', 650 + r4 * cos(radians(0)), 400 - r4 * sin(radians(0)), color(144, 238, 144), 16,
+                'Defensa de la intimidad, simulación.'));
+            nodes.push(crearNodo('comunion', 'Comunión', 650 + r4 * cos(radians(20)), 400 - r4 * sin(radians(20)), color(144, 238, 144), 16,
+                'Búsqueda de salir de la soledad (fiesta, amor).'));
+            nodes.push(crearNodo('ninguneo', 'Ninguneo', 650 + r4 * cos(radians(40)), 400 - r4 * sin(radians(40)), color(144, 238, 144), 16,
+                'Hacer de alguien ninguno, negación del otro.'));
+            nodes.push(crearNodo('pasado', 'Pasado', 650 + r4 * cos(radians(60)), 400 - r4 * sin(radians(60)), color(144, 238, 144), 16,
+                'Tradición indígena y colonial.'));
+            nodes.push(crearNodo('tradicion', 'Tradición', 650 + r4 * cos(radians(80)), 400 - r4 * sin(radians(80)), color(144, 238, 144), 16,
+                'Herencia española e indígena.'));
+            nodes.push(crearNodo('norteamericano', 'Norteamericano', 650 + r4 * cos(radians(100)), 400 - r4 * sin(radians(100)), color(144, 238, 144), 16,
+                'Activo, optimista, usa la realidad.'));
+            nodes.push(crearNodo('gesticulador', 'Gesticulador', 650 + r4 * cos(radians(120)), 400 - r4 * sin(radians(120)), color(144, 238, 144), 16,
+                'Personaje que simula para ser auténtico (Usigli).'));
+            nodes.push(crearNodo('sorjuana', 'Sor Juana', 650 + r4 * cos(radians(140)), 400 - r4 * sin(radians(140)), color(255, 255, 100), 16,
+                'Figura intelectual, soledad y conflicto.'));
+            nodes.push(crearNodo('prehispanico', 'México Prehispánico', 650 + r4 * cos(radians(160)), 400 - r4 * sin(radians(160)), color(210, 180, 140), 16,
+                'Culturas originarias, base mítica.'));
+
+            // -------------------- Aristas --------------------
+            function addEdge(from, to, label) {
+                edges.push({ from: from, to: to, label: label });
+            }
+
+            addEdge('soledad', 'comunion', '0.9 (tensión dialéctica)');
+            addEdge('soledad', 'mexicano', 'fondo');
+            addEdge('mexicano', 'mascara', '0.9 (defensa)');
+            addEdge('mexicano', 'ninguneo', 'relación');
+            addEdge('mexicano', 'norteamericano', '0.7 (oposición)');
+            addEdge('norteamericano', 'mexicano', '0.7 (oposición)');
+            addEdge('historia', 'conquista', 'hito');
+            addEdge('historia', 'independencia', 'hito');
+            addEdge('historia', 'reforma', 'hito');
+            addEdge('historia', 'revolucion', 'hito');
+            addEdge('conquista', 'chingada', '0.9 (violación)');
+            addEdge('conquista', 'malinche', '0.8 (traición)');
+            addEdge('conquista', 'cuauhtemoc', '0.8 (resistencia)');
+            addEdge('conquista', 'colonia', 'consecuencia');
+            addEdge('conquista', 'prehispanico', 'destrucción');
+            addEdge('colonia', 'virgen', 'culto');
+            addEdge('colonia', 'sorjuana', 'figura');
+            addEdge('reforma', 'tradicion', '0.8 (negación)');
+            addEdge('revolucion', 'pasado', '0.8 (regreso)');
+            addEdge('revolucion', 'prehispanico', 'inspiración');
+            addEdge('macho', 'chingada', 'acción de chingar');
+            addEdge('malinche', 'chingada', 'identificación');
+            addEdge('virgen', 'chingada', 'oposición');
+            addEdge('fiesta', 'comunion', 'representa');
+            addEdge('muerte', 'mexicano', 'espejo');
+            addEdge('pachuco', 'mexicano', 'extremo');
+            addEdge('pachuco', 'norteamericano', 'rechazo');
+            addEdge('independencia', 'reforma', 'precede');
+            addEdge('porfiriato', 'revolucion', 'causa');
+            addEdge('pasado', 'colonia', 'conexión');
+            addEdge('pasado', 'prehispanico', 'raíz');
+            addEdge('tradicion', 'colonia', 'hereda');
+            addEdge('tradicion', 'prehispanico', 'hereda');
+            addEdge('gesticulador', 'mascara', 'simulación');
+
+            noLoop();
+        }
+
+        // Función auxiliar para crear nodos con valores por defecto seguros
+        function crearNodo(id, label, x, y, col, sz, desc) {
+            return {
+                id: id,
+                label: label || '',
+                x: x,
+                y: y,
+                color: col,
+                size: sz,
+                desc: desc || 'Sin descripción'
+            };
         }
 
         function draw() {
             background(245, 245, 240);
             
-            // Dibujar aristas primero
+            // Dibujar aristas
             stroke(100, 100, 100, 80);
             strokeWeight(1);
             for (let e of edges) {
@@ -122,16 +177,17 @@
                 let toNode = nodes.find(n => n.id === e.to);
                 if (fromNode && toNode) {
                     line(fromNode.x, fromNode.y, toNode.x, toNode.y);
-                    // Dibujar etiqueta de la arista en el punto medio
+                    
+                    // Etiqueta de la arista en el punto medio con desplazamiento
                     let midX = (fromNode.x + toNode.x) / 2;
                     let midY = (fromNode.y + toNode.y) / 2;
-                    // Desplazar ligeramente para evitar superposición
                     let dx = toNode.x - fromNode.x;
                     let dy = toNode.y - fromNode.y;
                     let angle = atan2(dy, dx);
                     let offset = 15;
                     let labelX = midX + cos(angle + HALF_PI) * offset;
                     let labelY = midY + sin(angle + HALF_PI) * offset;
+                    
                     fill(80, 80, 80, 200);
                     noStroke();
                     textSize(9);
@@ -150,40 +206,36 @@
                 stroke(50);
                 strokeWeight(1);
                 ellipse(n.x, n.y, n.size, n.size);
-                // Etiqueta
+                // Etiqueta del nodo
                 fill(20);
                 noStroke();
                 textSize(n.size > 20 ? 12 : 10);
                 text(n.label, n.x, n.y - n.size/2 - 5);
             }
             
-            // Detectar hover y mostrar descripción
-            let mouseOver = false;
+            // Mostrar descripción al pasar el ratón
+            let nodoCerca = null;
             for (let n of nodes) {
                 let d = dist(mouseX, mouseY, n.x, n.y);
                 if (d < n.size/2) {
-                    mouseOver = true;
-                    fill(0, 0, 0, 220);
-                    noStroke();
-                    rect(mouseX + 10, mouseY - 30, 200, 40, 5);
-                    fill(255);
-                    textSize(11);
-                    textAlign(LEFT, TOP);
-                    text(n.desc, mouseX + 15, mouseY - 25, 190, 40);
-                    textAlign(CENTER, CENTER);
+                    nodoCerca = n;
                     break;
                 }
             }
-            if (!mouseOver) {
-                // Mostrar instrucción
-                fill(0, 0, 0, 150);
+            
+            if (nodoCerca) {
+                // Fondo para el texto
+                fill(0, 0, 0, 220);
+                noStroke();
+                rect(mouseX + 15, mouseY - 35, 220, 45, 5);
+                fill(255);
                 textSize(11);
                 textAlign(LEFT, TOP);
-                text("Pasa el ratón sobre un nodo para ver su descripción.", 20, 20);
+                text(nodoCerca.desc, mouseX + 20, mouseY - 30, 210, 40);
+                textAlign(CENTER, CENTER);
             }
         }
 
-        // Redibujar cuando el ratón se mueve para actualizar hover
         function mouseMoved() {
             redraw();
         }
